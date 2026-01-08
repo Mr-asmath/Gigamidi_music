@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Music Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-music"></i>
+                <h1>AI Music Generator</h1>
+            </div>
+            <p class="subtitle">Transform text into beautiful music using AI models</p>
+            <div class="device-info">
+                <span class="device-badge">
+                    <i class="fas fa-microchip"></i>
+                    {{ device.upper() }}
+                </span>
+                <span class="models-status" id="modelsStatus">
+                    <i class="fas fa-spinner fa-spin"></i> Checking models...
+                </span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel: Input Form -->
+            <div class="left-panel">
+                <div class="card">
+                    <h2><i class="fas fa-pen-alt"></i> Describe Your Music</h2>
+                    <div class="form-group">
+                        <label for="textInput"><i class="fas fa-quote-left"></i> Text Description</label>
+                        <textarea id="textInput" placeholder="Describe the music you want to generate...
+Examples:
+• Happy piano melody with joyful feeling
+• Sad violin piece for rainy day
+• Epic orchestral soundtrack for a movie
+• Jazz saxophone tune for a cafe
+• Energetic rock guitar solo"></textarea>
+                        <div class="char-count" id="charCount">0/500 characters</div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modelSelect"><i class="fas fa-brain"></i> AI Model</label>
+                            <select id="modelSelect">
+                                <option value="lstm">LSTM Model (Best for melodies)</option>
+                                <option value="transformer">Transformer Model (Complex compositions)</option>
+                                <option value="cnn">CNN Model (Rhythmic patterns)</option>
+                                <option value="hybrid">Hybrid Model (Balanced)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="instrumentSelect"><i class="fas fa-guitar"></i> Instrument</label>
+                            <select id="instrumentSelect">
+                                <option value="Acoustic Grand Piano">Piano</option>
+                                <option value="Acoustic Guitar (nylon)">Guitar</option>
+                                <option value="Violin">Violin</option>
+                                <option value="Flute">Flute</option>
+                                <option value="Trumpet">Trumpet</option>
+                                <option value="Alto Sax">Saxophone</option>
+                                <option value="String Ensemble 1">Strings</option>
+                                <option value="Synth Drum">Drums</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="lengthInput"><i class="fas fa-ruler"></i> Notes Length</label>
+                            <input type="range" id="lengthInput" min="20" max="200" value="50">
+                            <div class="range-value">
+                                <span id="lengthValue">50</span> notes
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tempoInput"><i class="fas fa-tachometer-alt"></i> Tempo (BPM)</label>
+                            <input type="range" id="tempoInput" min="40" max="200" value="120">
+                            <div class="range-value">
+                                <span id="tempoValue">120</span> BPM
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="generateBtn" class="btn btn-primary">
+                            <i class="fas fa-magic"></i> Generate Music
+                        </button>
+                        <button id="trainBtn" class="btn btn-secondary">
+                            <i class="fas fa-robot"></i> Train Models
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Generations -->
+                <div class="card recent-card">
+                    <h2><i class="fas fa-history"></i> Recent Generations</h2>
+                    <div id="recentList" class="recent-list">
+                        <div class="empty-state">
+                            <i class="fas fa-music"></i>
+                            <p>No music generated yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Output & Player -->
+            <div class="right-panel">
+                <div class="card output-card">
+                    <h2><i class="fas fa-music"></i> Generated Music</h2>
+                    
+                    <!-- Loading State -->
+                    <div id="loadingState" class="loading-state" style="display: none;">
+                        <div class="loader">
+                            <div class="spinner"></div>
+                            <p>AI is composing your music...</p>
+                            <div class="loading-steps">
+                                <div class="step active">Processing text</div>
+                                <div class="step">Generating melody</div>
+                                <div class="step">Creating MIDI file</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Result State -->
+                    <div id="resultState" class="result-state" style="display: none;">
+                        <div class="music-info">
+                            <div class="music-header">
+                                <h3 id="musicTitle">Your Generated Music</h3>
+                                <div class="music-meta">
+                                    <span><i class="fas fa-sticky-note"></i> <span id="noteCount">0</span> notes</span>
+                                    <span><i class="fas fa-tachometer-alt"></i> <span id="resultTempo">120</span> BPM</span>
+                                    <span><i class="fas fa-guitar"></i> <span id="resultInstrument">Piano</span></span>
+                                </div>
+                            </div>
+                            
+                            <div class="music-player">
+                                <div class="player-controls">
+                                    <button id="playBtn" class="btn-play">
+                                        <i class="fas fa-play"></i> Play
+                                    </button>
+                                    <button id="pauseBtn" class="btn-play">
+                                        <i class="fas fa-pause"></i> Pause
+                                    </button>
+                                    <button id="stopBtn" class="btn-play">
+                                        <i class="fas fa-stop"></i> Stop
+                                    </button>
+                                </div>
+                                <div class="player-info">
+                                    <div class="visualizer" id="visualizer">
+                                        <!-- Audio visualization bars will appear here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button id="downloadBtn" class="btn-action">
+                                    <i class="fas fa-download"></i> Download MIDI
+                                </button>
+                                <button id="regenerateBtn" class="btn-action">
+                                    <i class="fas fa-redo"></i> Regenerate
+                                </button>
+                                <button id="shareBtn" class="btn-action">
+                                    <i class="fas fa-share-alt"></i> Share
+                                </button>
+                            </div>
+
+                            <div class="technical-info">
+                                <h4><i class="fas fa-info-circle"></i> Technical Details</h4>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="label">Model Used:</span>
+                                        <span id="modelUsed" class="value">LSTM</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">File Size:</span>
+                                        <span id="fileSize" class="value">0 KB</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Generation Time:</span>
+                                        <span id="genTime" class="value">0s</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Status:</span>
+                                        <span class="value status-success">Success</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <h3>No Music Generated Yet</h3>
+                        <p>Describe the music you want and click "Generate Music" to create your first AI composition!</p>
+                        <div class="example-prompts">
+                            <h4><i class="fas fa-lightbulb"></i> Try these examples:</h4>
+                            <div class="prompt-grid">
+                                <button class="prompt-btn" data-text="Happy piano melody with joyful feeling">
+                                    Happy Piano
+                                </button>
+                                <button class="prompt-btn" data-text="Sad violin piece for a rainy day">
+                                    Sad Violin
+                                </button>
+                                <button class="prompt-btn" data-text="Epic orchestral soundtrack for a movie scene">
+                                    Epic Orchestra
+                                </button>
+                                <button class="prompt-btn" data-text="Jazz saxophone tune for a cozy cafe">
+                                    Jazz Saxophone
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Status -->
+                <div class="card status-card">
+                    <h2><i class="fas fa-robot"></i> AI Models Status</h2>
+                    <div id="modelsList" class="models-list">
+                        <!-- Models will be loaded here -->
+                    </div>
+                    <div class="status-actions">
+                        <button id="refreshModels" class="btn-small">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button id="clearAudio" class="btn-small">
+                            <i class="fas fa-trash"></i> Clear Audio
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>AI Music Generator v1.0 | Built with PyTorch, Flask, and ❤️</p>
+                <div class="footer-links">
+                    <a href="#"><i class="fab fa-github"></i> GitHub</a>
+                    <a href="#"><i class="fas fa-book"></i> Documentation</a>
+                    <a href="#"><i class="fas fa-envelope"></i> Contact</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Audio Element for MIDI playback -->
+    <audio id="audioPlayer" style="display: none;"></audio>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/midijs@0.3.0/lib/midi.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
