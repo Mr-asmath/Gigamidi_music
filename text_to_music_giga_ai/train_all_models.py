@@ -27,6 +27,8 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 
+import wandb
+
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -880,6 +882,41 @@ def main():
         )
         
         print(f"\n✅ Transformer training completed successfully!")
+        
+        # W&B API operations
+        print("\n🔄 Performing W&B API operations...")
+        
+        try:
+            api = wandb.Api()
+            
+            # Update run config (replace <run_id> with actual run ID)
+            run_id = "<run_id>"  # Replace with actual run ID
+            run_path = f"Ownuse/NIVI The Music Teacher/{run_id}"
+            run = api.run(run_path)
+            run.config["key"] = "updated_value"  # Replace with actual key and value
+            run.update()
+            print(f"✓ Updated run config for {run_path}")
+            
+            # Export metrics from a single run to a CSV file
+            metrics_dataframe = run.history()
+            metrics_dataframe.to_csv("metrics.csv")
+            print("✓ Exported metrics to metrics.csv")
+            
+            # Read metrics for a run
+            if run.state == "finished":
+                print("📊 Run metrics (timestamp, accuracy):")
+                for i, row in run.history().iterrows():
+                    timestamp = row.get("_timestamp", "N/A")
+                    accuracy = row.get("accuracy", "N/A")
+                    print(f"  {timestamp}: {accuracy}")
+            
+            # Get unsampled metric data
+            history = run.scan_history()
+            losses = [row["loss"] for row in history if "loss" in row]
+            print(f"✓ Retrieved {len(losses)} loss data points")
+            
+        except Exception as e:
+            print(f"⚠ W&B API operations failed: {e}")
         
     except Exception as e:
         print(f"\n❌ Error training transformer model: {e}")
